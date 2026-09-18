@@ -87,3 +87,7 @@ https://github.com/JohhannasReyn/move-quietly
 If you find a copy or move path that still displays Explorer's conflict chooser,
 please include your Windows version, the exact operation used, and the Windhawk
 log output in the issue report.
+
+## Install
+
+Install from the Windhawk mod list, or paste `move-quietly.wh.cpp` into Windhawk's mod editor as a local mod.
