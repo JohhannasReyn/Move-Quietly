@@ -2,7 +2,7 @@
 // @id              move-quietly
 // @name            Move Conflicts Quietly
 // @description     Automatically keeps both items when Explorer copy or move operations hit a name conflict, without showing the replace/skip prompt.
-// @version         0.6
+// @version         1.0
 // @author          Johhannas Reyn
 // @github          https://github.com/JohhannasReyn
 // @homepage        https://thegnosys.com/
@@ -333,22 +333,15 @@ bool ChooseUniqueName(IFileOperation* fileOperation,
             parentPath.pop_back();
         }
         if (!parentPath.empty() && EqualsIgnoreCase(parentPath, destinationPath)) {
-            Wh_Log(L"Same folder (%s); leaving to Explorer", parentPath.c_str());
             return false;
         }
-        Wh_Log(L"Parent: %s", parentPath.c_str());
-    } else {
-        Wh_Log(L"Item has no parent");
     }
 
     std::wstring name = (requestedName && *requestedName)
                             ? std::wstring(requestedName)
                             : DisplayName(item, SIGDN_PARENTRELATIVEPARSING);
-    Wh_Log(L"Name: '%s' (requested: '%s') -> %s", name.c_str(),
-           requestedName ? requestedName : L"", destinationPath.c_str());
     if (name.empty() || name.find(L'\\') != std::wstring::npos) {
-        Wh_Log(L"Unusable name; Shell fallback");
-        return false;
+        return false;  // Not a plain leaf name; Shell fallback.
     }
 
     std::wstring base = name;
@@ -376,11 +369,7 @@ bool ChooseUniqueName(IFileOperation* fileOperation,
         for (unsigned n = next;; ++n) {
             fullPath = destinationPath + L"\\" + candidate;
             std::wstring key = ToUpper(fullPath);
-            bool isReserved = reserved.count(key) != 0;
-            bool onDisk = PathExists(fullPath);
-            Wh_Log(L"  probe '%s': reserved=%d disk=%d", candidate.c_str(),
-                   isReserved, onDisk);
-            if (!isReserved && !onDisk) {
+            if (!reserved.count(key) && !PathExists(fullPath)) {
                 reserved.insert(key);
                 break;
             }
@@ -392,8 +381,7 @@ bool ChooseUniqueName(IFileOperation* fileOperation,
     }
 
     if (candidate == name) {
-        Wh_Log(L"No collision for '%s'", name.c_str());
-        return false;
+        return false;  // No collision; keep the caller's name.
     }
 
     uniqueName = candidate;
@@ -441,10 +429,7 @@ HRESULT QueueItem(ItemOperation_t original,
                uniqueName.c_str());
         name = uniqueName.c_str();
     }
-    HRESULT hr = original(fileOperation, item, destinationFolder, name, sink);
-    Wh_Log(L"Queued '%s' -> 0x%08X", name ? name : L"(null)",
-           static_cast<unsigned>(hr));
-    return hr;
+    return original(fileOperation, item, destinationFolder, name, sink);
 }
 
 // Queues every item behind the IUnknown accepted by CopyItems/MoveItems.
@@ -458,7 +443,6 @@ HRESULT QueueItemsFromContainer(ItemOperation_t originalSingle,
     // Single item (what Explorer's drop target sends, one call per item).
     ComPtr<IShellItem> single;
     if (SUCCEEDED(items->QueryInterface(IID_IShellItem, single.PutVoid()))) {
-        Wh_Log(L"Items hook: single IShellItem");
         return QueueItem(originalSingle, fileOperation, single.Get(),
                          destinationFolder, nullptr, nullptr);
     }
@@ -480,7 +464,6 @@ HRESULT QueueItemsFromContainer(ItemOperation_t originalSingle,
         if (FAILED(hr)) {
             return hr;
         }
-        Wh_Log(L"Items hook: array of %u", count);
         for (DWORD i = 0; i < count; ++i) {
             ComPtr<IShellItem> item;
             hr = array->GetItemAt(i, item.Put());
@@ -500,7 +483,6 @@ HRESULT QueueItemsFromContainer(ItemOperation_t originalSingle,
     ComPtr<IEnumShellItems> enumerator;
     if (SUCCEEDED(items->QueryInterface(IID_IEnumShellItems,
                                         enumerator.PutVoid()))) {
-        Wh_Log(L"Items hook: IEnumShellItems");
         for (;;) {
             ComPtr<IShellItem> item;
             ULONG fetched = 0;
@@ -520,7 +502,6 @@ HRESULT QueueItemsFromContainer(ItemOperation_t originalSingle,
     ComPtr<IPersistIDList> persistIdList;
     if (SUCCEEDED(items->QueryInterface(IID_IPersistIDList,
                                         persistIdList.PutVoid()))) {
-        Wh_Log(L"Items hook: IPersistIDList");
         PIDLIST_ABSOLUTE idList = nullptr;
         hr = persistIdList->GetIDList(&idList);
         if (FAILED(hr)) {
@@ -597,7 +578,6 @@ HRESULT STDMETHODCALLTYPE MoveItem_Hook(
     IShellItem* destinationFolder,
     LPCWSTR newName,
     IFileOperationProgressSink* sink) {
-    Wh_Log(L"MoveItem_Hook");
     ArmRenameOnCollision(fileOperation);
     return QueueItem(g_MoveItem_Original, fileOperation, item,
                      destinationFolder, newName, sink);
@@ -607,7 +587,6 @@ HRESULT STDMETHODCALLTYPE MoveItems_Hook(
     IFileOperation* fileOperation,
     IUnknown* items,
     IShellItem* destinationFolder) {
-    Wh_Log(L"MoveItems_Hook");
     ArmRenameOnCollision(fileOperation);
     return QueueItems(g_MoveItem_Original, g_MoveItems_Original, fileOperation,
                       items, destinationFolder);
@@ -619,7 +598,6 @@ HRESULT STDMETHODCALLTYPE CopyItem_Hook(
     IShellItem* destinationFolder,
     LPCWSTR copyName,
     IFileOperationProgressSink* sink) {
-    Wh_Log(L"CopyItem_Hook");
     ArmRenameOnCollision(fileOperation);
     return QueueItem(g_CopyItem_Original, fileOperation, item,
                      destinationFolder, copyName, sink);
@@ -629,7 +607,6 @@ HRESULT STDMETHODCALLTYPE CopyItems_Hook(
     IFileOperation* fileOperation,
     IUnknown* items,
     IShellItem* destinationFolder) {
-    Wh_Log(L"CopyItems_Hook");
     ArmRenameOnCollision(fileOperation);
     return QueueItems(g_CopyItem_Original, g_CopyItems_Original, fileOperation,
                       items, destinationFolder);
