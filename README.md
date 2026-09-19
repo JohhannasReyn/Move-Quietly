@@ -50,9 +50,19 @@ taken between the check and the copy) the Shell still keeps both instead of
 prompting. In that fallback case the Shell chooses the name, which is its
 usual `name - Copy.ext` pattern.
 
-Existing operation flags are retained. If the caller did not explicitly set
-operation flags, the documented `IFileOperation` defaults are preserved before
-the collision flags are added.
+The flags are decided once, just before the operation runs, so that the whole
+queue is known. Existing operation flags are retained; if the caller did not
+set any, the documented `IFileOperation` defaults are used.
+
+## Bypassing the mod for one operation
+
+Hold **Shift** (configurable) while pasting or dropping and the mod leaves that
+operation entirely to Explorer, prompt and all. Ctrl is already held during a
+paste and every modifier changes what a drag-and-drop does — Shift forces a
+move, Ctrl forces a copy, Alt creates a shortcut — so Shift is the default: it
+is free during a paste, and during a drop it only matters when the drop would
+otherwise have been a copy across drives (Explorer's cursor shows the change).
+The Caps Lock and Scroll Lock options work as a mode instead of a held key.
 
 ## Important behavior and limitations
 
@@ -61,9 +71,16 @@ the collision flags are added.
   different folder.
 - Items that are not file-system objects (for example dragged out of a zip
   folder or a phone) fall back to the Shell's own collision naming.
-- Rename-on-collision applies to Shell items, which can include folders as well
-  as files. A same-name folder encountered during a copy or move may therefore
-  be renamed instead of following Explorer's normal folder-merge conflict path.
+- When a folder with the same name already exists in the destination, the
+  default is to merge into it and apply the same keep-both renaming to any
+  conflicting files inside. To do that the mod queues the folder's contents
+  item by item, so Undo covers the individual items rather than the folder as
+  a whole, and a merged move leaves the (now empty) source folder tree to be
+  removed after the operation completes. The setting can instead hand merges
+  to Explorer unchanged (conflicts inside prompt as usual) or keep both
+  folders side by side as `Folder (2)`.
+- Operations whose caller has already chosen a collision policy (for example
+  "replace all" or "keep newer") are left untouched.
 - This version targets 64-bit File Explorer.
 - Rename-only and delete operations are not intentionally modified.
 
