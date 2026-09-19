@@ -56,19 +56,21 @@ set any, the documented `IFileOperation` defaults are used.
 
 ## Bypassing the mod for one operation
 
-Hold **Shift** (configurable) while pasting or dropping and the mod leaves that
-operation entirely to Explorer, prompt and all. Ctrl is already held during a
-paste and every modifier changes what a drag-and-drop does — Shift forces a
-move, Ctrl forces a copy, Alt creates a shortcut — so Shift is the default: it
-is free during a paste, and during a drop it only matters when the drop would
-otherwise have been a copy across drives (Explorer's cursor shows the change).
-The Caps Lock and Scroll Lock options work as a mode instead of a held key.
+Hold **Shift** (configurable) while dropping, or while clicking Paste in the
+context menu or the command bar, and the mod leaves that operation entirely to
+Explorer, prompt and all. Shift is the default because it is free in all of
+those places; during a drop it only matters when the drop would otherwise have
+copied across drives (Shift turns it into a move, and the cursor says so).
+
+A held key cannot work with **Ctrl+V**: adding any modifier makes it a
+different shortcut that Explorer does not treat as Paste (and Win+Ctrl+V is
+taken by Windows). For keyboard pastes, set the **lock** option instead: while
+Caps Lock or Scroll Lock is on, the mod stands aside.
 
 ## Important behavior and limitations
 
-- Copying an item into its own folder keeps Explorer's normal
-  `name - Copy.ext` behavior; the mod only renames items arriving from a
-  different folder.
+- Copying an item into its own folder is not renamed by the mod; Explorer's
+  own naming applies (normally `name - Copy.ext`).
 - Items that are not file-system objects (for example dragged out of a zip
   folder or a phone) fall back to the Shell's own collision naming.
 - When a folder with the same name already exists in the destination, the
@@ -80,7 +82,15 @@ The Caps Lock and Scroll Lock options work as a mode instead of a held key.
   to Explorer unchanged (conflicts inside prompt as usual) or keep both
   folders side by side as `Folder (2)`.
 - Operations whose caller has already chosen a collision policy (for example
-  "replace all" or "keep newer") are left untouched.
+  "replace all" or "keep newer") before queueing items are left untouched.
+- After a merged **move**, the emptied source folders are removed directly
+  (not via the Recycle Bin, and not covered by Undo). Only empty folders are
+  ever removed. Folders that are junctions or symbolic links are never merged;
+  they are handed to Explorer unchanged.
+- Merging a large folder resolves names for every item up front, before the
+  progress dialog appears, and the dialog then lists the individual items.
+- The hooks apply to every `IFileOperation` copy or move inside `explorer.exe`,
+  which includes third-party shell extensions hosted there.
 - This version targets 64-bit File Explorer.
 - Rename-only and delete operations are not intentionally modified.
 
