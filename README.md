@@ -58,9 +58,13 @@ set any, the documented `IFileOperation` defaults are used.
 
 Hold **Shift** (configurable) while dropping, or while clicking Paste in the
 context menu or the command bar, and the mod leaves that operation entirely to
-Explorer, prompt and all. Shift is the default because it is free in all of
-those places; during a drop it only matters when the drop would otherwise have
-copied across drives (Shift turns it into a move, and the cursor says so).
+Explorer, prompt and all.
+
+Be aware that Shift is also Explorer's "force a move" drag modifier. If you
+habitually hold Shift while dragging, every such drop bypasses the mod — set
+the option to **Disabled** or the Windows key instead. Ctrl and Alt are worse
+choices: Ctrl is held during every Ctrl+V paste (so the mod would never act on
+a keyboard paste) and forces a copy on drop; Alt turns a drop into a shortcut.
 
 A held key cannot work with **Ctrl+V**: adding any modifier makes it a
 different shortcut that Explorer does not treat as Paste (and Win+Ctrl+V is
@@ -105,6 +109,8 @@ and folders. Useful cases include:
 4. Test a multi-file copy containing several conflicts.
 5. Test a same-name folder collision so you understand the folder behavior on
    your Windows version.
+6. For a folder merge, include a hidden file and a hidden+system file (for
+   example `desktop.ini`) in the source and verify they arrive.
 
 ## Source and issues
 
